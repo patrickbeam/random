@@ -1,0 +1,89 @@
+#openswan setup
+#US East Host setup
+yum install openswan
+#Before you create your host keys you'll need to clean up the nssdb.
+certutil -N -d /etc/ipsec.d
+ipsec newhostkey --configdir /etc/ipsec.d --output /etc/ipsec.d/ipsec.secrets --bits 4096
+#edit /etc/ipsec.conf and uncomment the following line
+#include /etc/ipsec.d/*.conf
+#Now we need to get the rsasig for our configuration file.
+ipsec showhostkey --right
+#Create config file for our tunnel.  I normally use the vpc name(i.e. infrauseast-infraeuwest) to for each side of the tunnel.
+vi /etc/ipsec.d/vpcid-vpcid.conf
+config setup
+    protostack=netkey
+    nat_traversal=yes
+    oe=off
+    plutoopts="--perpeerlog"
+    # Enable this if you see "failed to find any available worker"
+    # nhelpers=0
+    force_keepalive=yes
+    keep_alive=10
+conn useast-euwest
+    auto=start
+    type=tunnel
+    authby=rsasig
+    pfs=yes
+    right=%defaultroute
+    rightid="AWS us east EIP"
+    rightsubnets={"VPC network the instance resides in" 172.18.0.0/16}
+    rightnexthop=%defaultroute
+    rightrsasigkey="This value comes from "ipsec showhostkey --right" above"
+
+    left="AWS EIP from eu host"
+    leftid="AWS EIP from eu host"
+    leftsubnet={VPC network the instance resides in the EU 10.254.0.0/16}
+    leftrsasigkey="This value comes from the remote machine "ipsec showhostkey --left""
+
+#EU West Host setup
+yum install openswan
+#Before you create your host keys you'll need to clean up the nssdb.
+certutil -N -d /etc/ipsec.d
+ipsec newhostkey --configdir /etc/ipsec.d --output /etc/ipsec.d/ipsec.secrets --bits 4096
+#edit /etc/ipsec.conf and uncomment the following line
+#include /etc/ipsec.d/*.conf
+#Now we need to get the rsasig for our configuration file.
+ipsec showhostkey --left
+#Create config file for our tunnel.  I normally use the vpc name(i.e. infrauseast-infraeuwest) to for each side of the tunnel.
+vi /etc/ipsec.d/vpcid-vpcid.conf
+config setup
+    protostack=netkey
+    nat_traversal=yes
+    oe=off
+    plutoopts="--perpeerlog"
+    # Enable this if you see "failed to find any available worker"
+    # nhelpers=0
+    force_keepalive=yes
+    keep_alive=10
+conn useast-euwest
+    auto=start
+    type=tunnel
+    authby=rsasig
+    pfs=yes
+    right=%defaultroute
+    rightid="AWS ue west EIP"
+    rightsubnets={"VPC network the instance resides in" 10.254.0.0/16}
+    rightnexthop=%defaultroute
+    rightrsasigkey="This value comes from "ipsec showhostkey --left" above"
+
+    left="AWS EIP from useast host"
+    leftid="AWS EIP from useast host"
+    leftsubnet={VPC network the instance resides in the EU 10.254.0.0/16}
+    leftrsasigkey="This value comes from the remote machine "ipsec showhostkey --right""
+
+Assuming your security groups allow the correct ports for ipsce you should now be able to bring up your tunnel.
+
+ipsec service start  "run this on each host"
+#toverify the tunnels are up running the following.  You should see at least one tunnels up.
+service ipsec status
+IPsec running  - pluto pid: 26578
+pluto pid 26578
+1 tunnels up
+some eroutes exist
+
+[root@ip-10-254-254-132 ~]# ping 172.18.1.116
+PING 172.18.1.116 (172.18.1.116) 56(84) bytes of data.
+64 bytes from 172.18.1.116: icmp_seq=1 ttl=64 time=80.9 ms
+64 bytes from 172.18.1.116: icmp_seq=2 ttl=64 time=80.8 ms
+64 bytes from 172.18.1.116: icmp_seq=3 ttl=64 time=80.9 ms
+64 bytes from 172.18.1.116: icmp_seq=4 ttl=64 time=80.8 ms
