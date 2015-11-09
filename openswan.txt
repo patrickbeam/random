@@ -1,4 +1,11 @@
 #openswan setup
+#There a couple of changes that you will need to make on both hosts
+#1. Configure instances to route traffic.
+sudo vi /etc/sysctl.conf
+net.ipv4.ip_forward = 1
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.all.send_redirects = 0
+#You must also disable source/destination checking no your EC2 Instances.
 #US East Host setup
 yum install openswan
 #Before you create your host keys you'll need to clean up the nssdb.
