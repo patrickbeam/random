@@ -7,7 +7,11 @@ def cidr_to_netmask(cidr):
     network, net_bits = cidr.split('/')
     host_bits = 32 - int(net_bits)
     netmask = socket.inet_ntoa(struct.pack('!I', (1 << 32) - (1 << host_bits)))
-    print network, netmask
+    print 'route outside', network, netmask, '4.14.106.246'
 
 if __name__ == "__main__":
-    cidr_to_netmask(open(sys.argv[1],'r'))
+    file_name = sys.argv[1]
+    f = open(file_name)
+    data = f.readlines()
+    for line in data:
+        cidr_to_netmask(line)
